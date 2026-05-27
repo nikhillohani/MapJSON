@@ -99,6 +99,15 @@ body.theme-night .login-card {
   background: rgba(24,34,49,0.96);
 }
 
+body.theme-night .login-btn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+body.theme-night .login-btn:hover {
+  background: #1d4ed8;
+}
+
 /* ── LOGIN ── */
 .login-screen {
   position: fixed;
