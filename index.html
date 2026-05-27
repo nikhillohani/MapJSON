@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map JSON Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-screen" id="login-screen">
+    <form class="login-card" onsubmit="event.preventDefault(); App.loginUser();">
+      <div class="version-chip">V1</div>
+      <h1>Map JSON</h1>
+      <p>Enter your name to start a private workspace on this browser. Your name may be recorded by the tool owner if usage tracking is configured.</p>
+      <label class="lbl" for="login-name">Your name</label>
+      <input type="text" id="login-name" placeholder="e.g. Nikhil" autocomplete="name" />
+      <button class="login-btn" type="submit">Continue</button>
+      <div class="login-credit">Developed by Nikhil</div>
+    </form>
+  </div>
+
+  <!-- ── HEADER ── -->
+  <header class="hdr">
+    <span class="hdr-mark">Map JSON</span>
+    <span class="hdr-title">Location Data Generator</span>
+    <div class="hdr-pills">
+      <span class="pill version">V1</span>
+      <span class="pill">User: <strong id="user-name-pill">Guest</strong></span>
+      <span class="pill">Theme: <strong id="theme-pill">Auto</strong></span>
+      <span class="pill">Total saved: <strong id="total-count">0</strong></span>
+      <span class="pill accent" id="storage-pill">Storage ready</span>
+    </div>
+  </header>
+
+  <!-- ── BODY ── -->
+  <div class="shell">
+
+    <!-- LEFT: GROUPS -->
+    <div class="left" id="left-col">
+      <div id="groups-container"></div>
+      <button class="new-group-btn" id="new-group-btn" onclick="App.addGroup()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Another Address Group (3 new slots)
+      </button>
+    </div>
+
+    <!-- RIGHT: OUTPUT -->
+    <div class="right">
+
+      <!-- Theme -->
+      <div class="panel theme-panel">
+        <div class="panel-title">Theme Mode</div>
+        <div class="segmented">
+          <button type="button" id="theme-auto" onclick="App.setThemeMode('auto')">Auto</button>
+          <button type="button" id="theme-day" onclick="App.setThemeMode('day')">Day</button>
+          <button type="button" id="theme-night" onclick="App.setThemeMode('night')">Night</button>
+        </div>
+        <div class="hint" id="theme-hint"></div>
+      </div>
+
+      <!-- Global CTA -->
+      <div class="panel global-cta-panel">
+        <div class="panel-title">Global CTA URL</div>
+        <div class="fg">
+          <label class="lbl">CTA URL</label>
+          <input type="url" id="global-cta-url" placeholder="https://www.vdx.tv" oninput="App.syncGlobalCta()" />
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="global-cta-enabled" onchange="App.syncGlobalCta()" />
+          <span>Use this CTA URL for every saved address</span>
+        </label>
+      </div>
+
+      <!-- URL → Full Data section -->
+      <div class="panel url-panel">
+        <div class="panel-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          Google Maps URL → Full JSON Entry
+        </div>
+        <p class="geo-desc">
+          Paste a Google Maps URL and we'll extract the place name &amp; coordinates from the URL,
+          then reverse-geocode to fill the full address automatically.
+        </p>
+
+        <div class="fg">
+          <label class="lbl">Google Maps URL</label>
+          <textarea id="url-lookup-input" rows="3"
+            placeholder="https://www.google.com/maps/place/AMC+The+Americana+at+Brand+18/@34.1429693,-118.2598441,..."></textarea>
+        </div>
+
+        <div class="fg">
+          <label class="lbl">CTA URL <span style="font-weight:400;opacity:0.6">(optional)</span></label>
+          <input type="url" id="url-lookup-cta" placeholder="https://www.vdx.tv" />
+        </div>
+
+        <button class="geo-search-btn" id="url-lookup-btn" onclick="App.lookupFromUrl()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Extract &amp; Build Entry
+        </button>
+        <div class="lookup-steps" id="lookup-steps">
+          <div class="lookup-step" data-step="1"><span></span><b>URL</b></div>
+          <div class="lookup-step" data-step="2"><span></span><b>Coordinates</b></div>
+          <div class="lookup-step" data-step="3"><span></span><b>Address</b></div>
+          <div class="lookup-step" data-step="4"><span></span><b>Preview</b></div>
+        </div>
+        <div class="hint" id="url-lookup-hint"></div>
+
+        <!-- Preview card — hidden until result -->
+        <div class="url-preview-card" id="url-preview-card" style="display:none">
+          <div class="url-preview-title">Preview</div>
+          <div class="url-preview-fields" id="url-preview-fields"></div>
+          <div class="url-preview-actions">
+            <button class="url-edit-toggle" id="url-edit-toggle" onclick="App.toggleUrlEdit()">
+              ✏️ Edit Fields
+            </button>
+            <button class="url-add-btn" onclick="App.addUrlEntryToSlot()">
+              + Add to Next Empty Slot
+            </button>
+            <button class="url-save-btn" onclick="App.saveUrlEntryDirect()">
+              ✓ Save as Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Editable override fields — hidden by default -->
+        <div class="url-edit-form" id="url-edit-form" style="display:none">
+          <div class="url-edit-title">Override Fields</div>
+          <div class="fg"><label class="lbl">Label</label><input type="text" id="ue-label" /></div>
+          <div class="fg"><label class="lbl">Address</label><input type="text" id="ue-address" /></div>
+          <div class="r3g">
+            <div class="fg"><label class="lbl">City</label><input type="text" id="ue-city" /></div>
+            <div class="fg"><label class="lbl">State</label><input type="text" id="ue-state" maxlength="2" style="text-transform:uppercase" /></div>
+            <div class="fg"><label class="lbl">ZIP</label><input type="text" id="ue-zip" /></div>
+          </div>
+          <div class="r2g">
+            <div class="fg"><label class="lbl">Lat</label><input type="number" id="ue-lat" step="any" /></div>
+            <div class="fg"><label class="lbl">Long</label><input type="number" id="ue-long" step="any" /></div>
+          </div>
+          <button class="parse-btn" onclick="App.applyUrlEdits()">Apply Edits</button>
+        </div>
+      </div>
+
+      <!-- JSON Output -->
+      <div class="panel">
+        <div class="out-hdr">
+          <span class="panel-title" style="margin:0">Latest JSON Output</span>
+          <button class="copy-sm" id="copy-btn" onclick="App.copyLatest()">Copy</button>
+        </div>
+        <div class="json-box empty" id="json-out">
+        <span>Download JSON to<br>see output here.</span>
+        </div>
+      </div>
+
+      <!-- Saved Entries -->
+      <div class="panel">
+        <div class="out-hdr">
+          <span class="panel-title" style="margin:0">Saved Entries (<span id="hist-cnt">0</span>)</span>
+          <button class="copy-sm" onclick="App.clearAll()">Clear All</button>
+        </div>
+        <div id="hist-list"><div class="empty-hist">No entries yet.</div></div>
+        <button class="export-all-btn" onclick="App.exportAllJSON()">↓ Export All as JSON Array</button>
+      </div>
+
+      <!-- Owner Usage Log -->
+      <div class="panel usage-panel admin-only" id="owner-usage-panel" style="display:none">
+        <div class="out-hdr">
+          <span class="panel-title" style="margin:0">Owner Usage Log</span>
+          <button class="copy-sm" onclick="App.clearUsageLog()">Clear</button>
+        </div>
+        <div id="usage-list"><div class="empty-hist">No usage yet.</div></div>
+        <div class="tracking-note" id="tracking-note"></div>
+        <div class="tracking-note">
+          To track visitors on GitHub Pages, deploy the included Google Apps Script and paste its web app URL into <strong>TRACKING_ENDPOINT</strong> in js/app.js.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="dev-credit">Developed by Nikhil</footer>
+  <script src="js/app.js"></script>
+</body>
+</html>
